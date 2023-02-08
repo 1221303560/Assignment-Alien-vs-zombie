@@ -19,6 +19,16 @@
 using namespace std;
 class Zombie;
 
+int mst = 0; // alien movement state
+int pst = 0; // alien player state
+int gst = 1; // game state, 1 = player turn, 11-19 = zombie turn, 3 = alien wins, 4 = alien loses, 5 = quit game
+int cst = 0; // player command state
+int load = 0; // load call
+int nzombie = 0; // number of zombies (save)
+int zombieLeft = 0; // number of zombie alive in game (save)
+int nrow = 0; // number of rows in board (save)
+int ncolumn = 0; // number of columns in board (save)
+
 class Board
 {
 private:
@@ -45,6 +55,7 @@ class Alien
 {
 private:
     char symbol;
+    char trail;
     int x_, y_;
     int hp_, atk_;
 
@@ -62,10 +73,9 @@ public:
     void setAtk(int atk);
     void setAlien(int x, int y, Board &game);
 
-    void alienUp(int &CState, int nzombie, Board &game, Zombie *zombie);
-    void alienDown(int &CState, int nzombie, Board &game, Zombie *zombie);
-    void alienLeft(int &CState, int nzombie, Board &game, Zombie *zombie);
-    void alienRight(int &CState, int nzombie, Board &game, Zombie *zombie);
+    void alienMovement(Board &game);
+    void alienCheckNext(Board &game);
+    void alienAction(Board &game);
     
 };
 
@@ -90,6 +100,8 @@ public:
 
     void setHp(int hp);
     void setSymbol(char ch);
+    void setX(int x);
+    void setY(int y);
     void setZombie(int x, int y, Board &game);
 
     void zombieUp(Board& game);
@@ -100,9 +112,9 @@ public:
     void action(Board& game, Alien& alien);
 };
 
-// zombie* Zombie[9];
+Zombie zombie[9];
 
-Board::Board()      // DEMO !!! Default Game Settings Rows : 5 Columns : 9
+Board::Board()      // Default Game Settings Rows : 5 Columns : 9
 {
     int dimX = 9;
     int dimY = 5;
@@ -151,19 +163,28 @@ void Board::display() const
 {
     // comment this out during testing
     system("cls");
-    cout << "      .:Alien vs Zombie :.       "<< endl;
+    cout << "   ";
+    if (dimX_ > 9) // make title centered on game board
+    {
+        int x = dimX_ - 9;
+        for (int i = 0; i < x; ++i)
+        {
+            cout << " ";
+        }
+    }
+    cout << ".:Alien vs Zombie :."<< endl;
     // for each row
     for (int i = 0; i < dimY_; ++i)
     {
         // display upper border of the row
-        cout << "  ";
+        cout << "   ";
         for (int j = 0; j < dimX_; ++j)
         {
             cout << "+-";
         }
         cout << "+" << endl;
         // display row number
-        cout << setw(2) << (dimY_ - i);
+        cout << setw(2) << (dimY_ - i) << " ";
         // display cell content and border of each column
         for (int j = 0; j < dimX_; ++j)
         {
@@ -172,7 +193,7 @@ void Board::display() const
         cout << "|" << endl;
     }
     // display lower border of the last row
-    cout << "  ";
+    cout << "   ";
     for (int j = 0; j < dimX_; ++j)
     {
         cout << "+-";
@@ -180,20 +201,32 @@ void Board::display() const
     cout << "+" << endl;
     // display column number
     cout << "  ";
-    for (int j = 0; j < dimX_; ++j)
+    if (dimX_ > 9)
     {
-        int digit = (j + 1) / 10;
         cout << " ";
-        if (digit == 0)
+        for (int j = 0; j < dimX_; ++j)
+        {
+            int digit = (j + 1) / 10;
             cout << " ";
-        else
-            cout << digit;
+            if (digit == 0)
+                cout << " ";
+            else
+                cout << digit;
+        }
+        cout << endl;
+        cout << "   ";
+        for (int j = 0; j < dimX_; ++j)
+        {
+            cout << " " << (j + 1) % 10;
+        }
     }
-    cout << endl;
-    cout << "  ";
-    for (int j = 0; j < dimX_; ++j)
+    else
     {
-        cout << " " << (j + 1) % 10;
+        cout << " ";
+        for (int j = 0; j < dimX_; ++j)
+        {
+            cout << " " << (j + 1) % 10;
+        }
     }
     cout << endl
          << endl;    
@@ -227,6 +260,7 @@ Alien::Alien()
 Alien::Alien(int x, int y, char chAlien) // make object Alien and specify its coordinates
 {
     symbol = chAlien;
+    trail = '.';
     x_ = x;
     y_ = y;
     hp_ = 100;
@@ -276,622 +310,341 @@ void Alien::setAlien(int x, int y, Board &game)
     game.setObject(x, y, symbol);
 }
 
-void Alien::alienUp(int &CState, int nzombie, Board &game, Zombie *zombie)
+void Alien::alienMovement(Board &game)
 {
-    int y = y_ - 1;
-    char next = game.getObject(x_, y);
-    system("pause");
-    
-    if (game.isInsideBoard(x_, y))
+    game.setObject(x_, y_, trail);
+
+    switch (mst)
     {
-        if (next == ' ')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == '.')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == 'h')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien picks up health pack." << endl
-                 << "Alien's health increased from " << hp_;
-            hp_ = hp_ + 20;
-            cout << "to " << hp_ << "." << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
-        }
-        else if (next == 'p')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            int closest = 1;
-            float smallestDistance = 39.59797975;
-
-            for (int i = 1; i < nzombie; i++)
-            {
-                int x1 = zombie[i].getX();
-                int y1 = zombie[i].getY();
-
-                float distance = sqrt(pow((x1 - x_), 2.0) + pow((y1 - y_), 2.0));
-                
-                if (distance < smallestDistance)
-                {
-                    closest = i;
-                }
-            }
-            
-            int previousHp = zombie[closest].getHp();
-            int zHp = previousHp - 10;
-            cout << "Alien attacks zombie" << closest << ". " << endl
-                 << "Zombie " << closest << "hp drops to " << zHp << ". " << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
-        } 
-        else if (next == 'r')
-        {
-            char objects[] = {' ', ' ', '<', '>', '^', 'h', 'p', 'v'};
-            int noOfObjects = 8;
-            int objNo = rand() % noOfObjects;
-            game.display();
-            cout << "Alien encounters a rock." << endl
-                 << "Alien proceeds to uncover the rock." << endl;
-            system("pause");
-
-            game.setObject(x_, y_, objects[objNo]);
-            game.display();
-
-            if (objects[objNo] == ' ')
-            {
-                cout << "Alien found nothing beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == '<' || objects[objNo] == '>' || objects[objNo] == '^' || objects[objNo] == 'v')
-            {
-                cout << "Alien discovers an arrow beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == 'p')
-            {
-                cout << "Alien discovers a pod beneath the rock. " << endl;
-            }
-
-            else if (objects[objNo] == 'h')
-            {
-                cout << "Alien discovers a health kit beneath the rock. " << endl;
-            }
-
-            system("pause");
-
-            game.display();
-            cout << "Alien move ends." << endl;
-            system("pause");
-
-            CState = 5; //stop
-        }
-
-        else if (next == '^')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            system("pause");
-        }
-
-        else if (next == 'v')
-        { 
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 2; //down
-            system("pause");
-        }
-
-        else if (next == '<')
-        {
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 3; //left
-            system("pause");
-        }
-
-        else if (next == '>')
-        {
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 4; //right
-            system("pause");
-        }
+        case 1: // up
+            y_++;
+            setAlien(x_, y_, game);
+            break;
+        case 2: // down
+            y_--;
+            setAlien(x_, y_, game);
+            break;
+        case 3: // left
+            x_--;
+            setAlien(x_, y_, game);
+            break;
+        case 4: // right
+            x_++;
+            setAlien(x_, y_, game);
+            break;
     }
-        
-    else
-    {
-        game.display();
-        cout << "Alien hits the border." << endl;
-        CState = 5; //stop
-        system("pause");
-    }  
 }
 
-void Alien::alienDown(int &CState, int nzombie, Board &game, Zombie *zombie)
+void Alien::alienCheckNext(Board &game)
 {
-    int y = y_ - 1;
-    char next = game.getObject(x_, y);
-    system("pause");
-    
-    if (game.isInsideBoard(x_, y))
+    int x = x_;
+    int y = y_;
+
+    switch (mst)
     {
-        if (next == ' ')
+        case 1: // up
+            y++;
+            break;
+        case 2: // down
+            y--;
+            break;
+        case 3: // left
+            x--;
+            break;
+        case 4: // right
+            x++;
+            break;
+    }
+
+    if (game.isInsideBoard(x, y)) // if not out of bounds
+    {
+        char objNext = game.getObject(x, y);
+
+        switch (objNext)
         {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == '.')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == 'h')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            game.display();
-            cout << "Alien picks up health pack." << endl
-                 << "Alien's health increased from " << hp_;
-            hp_ = hp_ + 20;
-            cout << "to " << hp_ << "." << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
-        }
-        else if (next == 'p')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x_, y, game);
-            int closest = 1;
-            float smallestDistance = 39.59797975;
-
-            for (int i = 1; i < nzombie; i++)
-            {
-                int x1 = zombie[i].getX();
-                int y1 = zombie[i].getY();
-
-                float distance = sqrt(pow((x1 - x_), 2.0) + pow((y1 - y_), 2.0));
-                
-                if (distance < smallestDistance)
-                {
-                    closest = i;
-                }
-            }
-            
-            int previousHp = zombie[closest].getHp();
-            int zHp = previousHp - 10;
-            cout << "Alien attacks zombie" << closest << ". " << endl
-                 << "Zombie " << closest << "hp drops to " << zHp << ". " << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
-        } 
-        else if (next == 'r')
-        {
-            char objects[] = {' ', ' ', '<', '>', '^', 'h', 'p', 'v'};
-            int noOfObjects = 8;
-            int objNo = rand() % noOfObjects;
-            game.display();
-            cout << "Alien encounters a rock." << endl
-                 << "Alien proceeds to uncover the rock." << endl;
-            system("pause");
-
-            game.setObject(x_, y_, objects[objNo]);
-            game.display();
-
-            if (objects[objNo] == ' ')
-            {
-                cout << "Alien found nothing beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == '<' || objects[objNo] == '>' || objects[objNo] == '^' || objects[objNo] == 'v')
-            {
-                cout << "Alien discovers an arrow beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == 'p')
-            {
-                cout << "Alien discovers a pod beneath the rock. " << endl;
-            }
-
-            else if (objects[objNo] == 'h')
-            {
-                cout << "Alien discovers a health kit beneath the rock. " << endl;
-            }
-
-            system("pause");
-
-            game.display();
-            system("pause");
-
-            CState = 5; //stop
-        }
-
-        else if (next == '^')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            system("pause");
-        }
-
-        else if (next == 'v')
-        { 
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 2; //down
-            system("pause");
-        }
-
-        else if (next == '<')
-        {
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 3; //left
-            system("pause");
-        }
-
-        else if (next == '>')
-        {
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 4; //right
-            system("pause");
+            case ' ':
+            case '.':
+                pst = 11; // encounters space or trail
+                break;
+            case 'h':
+                pst = 12; // encounters health
+                break;
+            case 'p':
+                pst = 13; // encounters pod
+                break;
+            case 'r':
+                pst = 14; // encounters rock
+                break;
+            case '^':
+                pst = 15; // encounters arrow up
+                break;
+            case 'v':
+                pst = 16; // encounters arrow down
+                break;
+            case '<':
+                pst = 17; // encounters arrow left
+                break;
+            case '>':
+                pst = 18; // encounters arrow right
+                break;
+            // encounters zombie 1-9
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7': 
+            case '8':
+            case '9':
+                pst = 21;
+                break;   
         }
     }
-        
-    else
+    else // if out of bounds
     {
-        game.display();
-        cout << "Alien hits the border." << endl;
-        CState = 5; //stop
-        system("pause");
-    }  
+        pst = 19; // encounters border
+    }
+
 }
 
-void Alien::alienLeft(int &CState, int nzombie, Board &game, Zombie *zombie)
+void Alien::alienAction(Board &game)
 {
-    int x = x_ - 1;
-    char next = game.getObject(x, y_);
-    system("pause");
-    
-    if (game.isInsideBoard(x, y_))
+    switch (pst)
     {
-        if (next == ' ')
+        case 11: // Alien encounters space or trail
         {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
             cout << "Alien encounters nothing." << endl;
-            system("pause");
+
+            switch (mst)
+            {
+            case 1: // up
+                    cout << "Alien continues up." << endl;
+                    break;
+            case 2: // down
+                    cout << "Alien continues down." << endl;
+                    break;
+            case 3: // left
+                    cout << "Alien continues left." << endl;
+                    break;
+            case 4: // right
+                    cout << "Alien continues right." << endl;
+                    break;
+            }
+            alienMovement(game);
+            break;
         }
-        else if (next == '.')
+        
+        case 12: // Alien encounters health
         {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == 'h')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
-            cout << "Alien picks up health pack." << endl
-                 << "Alien's health increased from " << hp_;
+            cout << "Alien finds a health pack and proceeds to use it." << endl;
+            cout << "Alien's life increased by 20." << endl;
             hp_ = hp_ + 20;
-            cout << "to " << hp_ << "." << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
+            alienMovement(game);
+            break;
         }
-        else if (next == 'p')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            int closest = 1;
-            float smallestDistance = 39.59797975;
 
+        case 13: // Alien eccounters pod
+        {
+            cout << "Alien finds a pod." << endl;
+
+            int closest = 1;
+            float smallestDistance = 39.59797975; // max distance of max dimensions
+
+            int x1, y1;
             for (int i = 1; i < nzombie; i++)
             {
-                int x1 = zombie[i].getX();
-                int y1 = zombie[i].getY();
+                x1 = zombie[i].getX();
+                y1 = zombie[i].getY();
 
                 float distance = sqrt(pow((x1 - x_), 2.0) + pow((y1 - y_), 2.0));
-                
+
                 if (distance < smallestDistance)
                 {
+                    smallestDistance = distance;
                     closest = i;
                 }
             }
-            
-            int previousHp = zombie[closest].getHp();
-            int zHp = previousHp - 10;
-            cout << "Alien attacks zombie" << closest << ". " << endl
-                 << "Zombie " << closest << "hp drops to " << zHp << ". " << endl;
-            system("pause");
 
-            game.display();
-            system("pause");
-        } 
-        else if (next == 'r')
+            int previousHp = zombie[closest].getHp();
+            int currentHp = previousHp - 10;
+            cout << "Alien attacks zombie " << closest << " with 10 damage using pod." << endl
+                 << endl;
+
+            if (currentHp > 0)
+            {
+                cout << "Zombie " << closest << " is still standing after the attack." << endl;
+                zombie[closest].setHp(currentHp);
+            }
+            else
+            {
+                cout << "Zombie " << closest << " dies." << endl;
+                zombie[closest].setHp(0);
+                zombieLeft = zombieLeft - 1;
+                // remove zombie from board
+                game.setObject(x1, y1, ' '); 
+                zombie[closest].setX(100);
+                zombie[closest].setY(100);
+            }
+            alienMovement(game);
+            break;
+        }
+        
+        case 14: // alien encounters rock
         {
+            cout << "Alien encounters a rock and proceeds to uncover it." << endl << endl;
+
             char objects[] = {' ', ' ', '<', '>', '^', 'h', 'p', 'v'};
             int noOfObjects = 8;
             int objNo = rand() % noOfObjects;
-            game.display();
-            cout << "Alien encounters a rock." << endl
-                 << "Alien proceeds to uncover the rock." << endl;
-            system("pause");
 
-            game.setObject(x_, y_, objects[objNo]);
-            game.display();
+            char obj = objects[objNo];
 
-            if (objects[objNo] == ' ')
+            if (obj == ' ')
             {
                 cout << "Alien found nothing beneath the rock." << endl;
             }
 
-            else if (objects[objNo] == '<' || objects[objNo] == '>' || objects[objNo] == '^' || objects[objNo] == 'v')
+            else if (obj == '<' || obj == '>' || obj == '^' || obj == 'v')
             {
                 cout << "Alien discovers an arrow beneath the rock." << endl;
             }
 
-            else if (objects[objNo] == 'p')
+            else if (obj == 'p')
             {
                 cout << "Alien discovers a pod beneath the rock. " << endl;
             }
 
-            else if (objects[objNo] == 'h')
+            else if (obj == 'h')
             {
                 cout << "Alien discovers a health kit beneath the rock. " << endl;
             }
 
-            system("pause");
+            int x = x_;
+            int y = y_;
 
-            game.display();
-            cout << "Alien move ends." << endl;
-            system("pause");
-
-            CState = 5; //stop
-        }
-
-        else if (next == '^')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 3;
-        }
-
-        else if (next == 'v')
-        { 
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 2; //down
-            system("pause");
-        }
-
-        else if (next == '<')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 3; //left
-            system("pause");
-        }
-
-        else if (next == '>')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 4; //right
-            system("pause");
-        }
-    }
-        
-    else
-    {
-        game.display();
-        cout << "Alien hits the border." << endl;
-        CState = 5; //stop
-        system("pause");
-    }  
-}
-
-void Alien::alienRight(int &CState, int nzombie, Board &game, Zombie *zombie)
-{
-    int x = x_ + 1;
-    char next = game.getObject(x, y_);
-    system("pause");
-    
-    if (game.isInsideBoard(x, y_))
-    {
-        if (next == ' ')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == '.')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
-            cout << "Alien encounters nothing." << endl;
-            system("pause");
-        }
-        else if (next == 'h')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            game.display();
-            cout << "Alien picks up health pack." << endl
-                 << "Alien's health increased from " << hp_;
-            hp_ = hp_ + 20;
-            cout << "to " << hp_ << "." << endl;
-            system("pause");
-        }
-        else if (next == 'p')
-        {
-            game.setObject(x_, y_, '.');
-            setAlien(x, y_, game);
-            int closest = 1;
-            float smallestDistance = 39.59797975;
-
-            for (int i = 1; i < nzombie; i++)
-            {
-                int x1 = zombie[i].getX();
-                int y1 = zombie[i].getY();
-
-                float distance = sqrt(pow((x1 - x_), 2.0) + pow((y1 - y_), 2.0));
-                
-                if (distance < smallestDistance)
+            switch (mst)
                 {
-                    closest = i;
+                    case 1: // up
+                        y = y + 1;
+                        break;
+                    case 2: // down
+                        y = y - 1;
+                        break;
+                    case 3: // left
+                        x = x - 1;
+                        break;
+                    case 4: // right
+                        x = x + 1;
+                        break;
                 }
+            game.setObject(x, y, obj);
+            cout << "Alien stops in front of the object." << endl;
+            pst = 20; // alien turn ends
+            break;
+        }
+
+        case 15: // alien encounters up arrow
+        {
+            cout << "Alien finds an up arrow." << endl;
+            atk_ = atk_ + 20;
+            cout << "Alien's attack increased by 20 and movement direction is switched upwards." << endl;
+            alienMovement(game);
+            mst = 1; // alien up
+            break;
+        }
+
+        case 16: // alien encounters down arrow
+        {   
+            cout << "Alien finds a down arrow." << endl;
+            atk_ = atk_ + 20;
+            cout << "Alien's attack increased by 20 and movement direction is switched downwards." << endl;
+            alienMovement(game);
+            mst = 2; // alien down
+            break;
+        }
+
+        case 17: // alien encounters left arrow
+        {
+            cout << "Alien finds a left arrow." << endl;
+            atk_ = atk_ + 20;
+            cout << "Alien's attack increased by 20 and movement direction is switched to the left." << endl;
+            alienMovement(game);
+            mst = 3; // alien left
+            break;
+        }
+
+        case 18: // alien encounters right arrow
+        {
+            cout << "Alien find a right arrow." << endl;
+            atk_ = atk_ + 20;
+            cout << "Alien's attack increased by 20 and movement direction is switched to the right." << endl;
+            alienMovement(game);
+            mst = 4; // alien right
+            break;
+        }
+
+        case 19: // alien hits border
+        {
+            cout << "Alien hits the border." << endl << endl;
+            pst = 20; // alien turn ends
+            break;
+        }
+
+        case 21: // alien hits zombie 1-9
+        {
+            int x = x_;
+            int y = y_;
+
+            switch (mst)
+                {
+                    case 1: // up
+                        y = y + 1;
+                        break;
+                    case 2: // down
+                        y = y - 1;
+                        break;
+                    case 3: // left
+                        x = x - 1;
+                        break;
+                    case 4: // right
+                        x = x + 1;
+                        break;
+                }
+            char ch = game.getObject(x, y);
+            int zNumber = ch - '0';
+
+            cout << "Alien hits zombie " << zNumber << " ." << endl;
+            cout << "Alien inficts " << atk_ << " damage to zombie " << zNumber << " . ";
+
+            int zhp = zombie[zNumber].getHp();
+            zhp = zhp - atk_;
+
+            if (zhp > 0)
+            {
+                cout << "Zombie " << zNumber << " is still standing after the attack." << endl;
+                zombie[zNumber].setHp(zhp);
+            }
+            else
+            {
+                cout << "Zombie " << zNumber << " dies." << endl;
+                zombie[zNumber].setHp(0);
+                zombieLeft = zombieLeft - 1;
+                // remove zombie from board
+                game.setObject(x, y, ' '); 
+                zombie[zNumber].setX(100);
+                zombie[zNumber].setY(100);
             }
             
-            int previousHp = zombie[closest].getHp();
-            int zHp = previousHp - 10;
-            cout << "Alien attacks zombie" << closest << ". " << endl
-                 << "Zombie " << closest << "hp drops to " << zHp << ". " << endl;
-            system("pause");
-
-            game.display();
-            system("pause");
-        } 
-        else if (next == 'r')
-        {
-            char objects[] = {' ', ' ', '<', '>', '^', 'h', 'p', 'v'};
-            int noOfObjects = 8;
-            int objNo = rand() % noOfObjects;
-            game.display();
-            cout << "Alien encounters a rock." << endl
-                 << "Alien proceeds to uncover the rock." << endl;
-            system("pause");
-
-            game.setObject(x_, y_, objects[objNo]);
-            game.display();
-
-            if (objects[objNo] == ' ')
-            {
-                cout << "Alien found nothing beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == '<' || objects[objNo] == '>' || objects[objNo] == '^' || objects[objNo] == 'v')
-            {
-                cout << "Alien discovers an arrow beneath the rock." << endl;
-            }
-
-            else if (objects[objNo] == 'p')
-            {
-                cout << "Alien discovers a pod beneath the rock. " << endl;
-            }
-
-            else if (objects[objNo] == 'h')
-            {
-                cout << "Alien discovers a health kit beneath the rock. " << endl;
-            }
-
-            system("pause");
-
-            CState = 5; //stop
-        }
-
-        else if (next == '^')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            system("pause");
-        }
-
-        else if (next == 'v')
-        { 
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 2; //down
-            system("pause");
-        }
-
-        else if (next == '<')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 3; //left
-            system("pause");
-        }
-
-        else if (next == '>')
-        {
-            game.display();
-            cout << "Aliens finds an arrow." << endl;
-            cout << "Alien's attack is increased by 20." << endl;
-            atk_ = atk_ + 20;
-            CState = 4; //right
-            system("pause");
+            pst = 20; // alien turn ends
+            gst = 2;
+            break;
         }
     }
-        
-    else
-    {
-        game.display();
-        cout << "Alien hits the border." << endl;
-        CState = 5; //stop
-        system("pause");
-    }
+    if (zombieLeft = 0) // win condition
+        {
+            gst = 3; // alien wins
+        }
 }
 
 
