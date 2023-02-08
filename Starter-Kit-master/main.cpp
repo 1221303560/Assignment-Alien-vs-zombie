@@ -982,9 +982,8 @@ void Zombie::zombieRight(Board &game)
     setZombie(x, y_, game); // set zombie
 }
 
-void Zombie::action(Board& game, Alien& alien)
+void Zombie::movement(Board& game, Alien& alien)
 {
-    // Scan through board and find position of alien
     int alienX, alienY;
 
     bool left = false;
@@ -992,37 +991,29 @@ void Zombie::action(Board& game, Alien& alien)
     bool up = false;
     bool bottom = false;
 
-    for (int i = 1; i <= game.getDimY(); i++)
-    {
-        for (int j = 1; j <= game.getDimX(); j++)
-        {
-            if (game.getObject(j, i) == 'A')
-            {
-                alienX = j;
-                alienY = i;
-            }
-        }
-    }
+    alienX = alien.getX();
+    alienY = alien.getY();
 
-    // Check zombie is beside border
-    if (x_ == 1)
+    
+    // Check zombie is beside border and beside alien
+    if (x_ == 1 || alienX == x_ - 1 && alienY == y_)
     {
-        // Border at left
+        // Border or alien at left
         left = true;
     }
-    else if (x_ == game.getDimX())
+    else if (x_ == game.getDimX() || alienX == x_ + 1 && alienY == y_)
     {
-        // Border at right
+        // Border or alien at right
         right = true;
     }
-    else if (y_ == 1)
+    else if (y_ == 1 || alienX == x_ && alienY == y_ + 1)
     {
-        // Border at top
+        // Border or alien at top
         up = true;
     }
-    else if (y_ == game.getDimY())
+    else if (y_ == game.getDimY() || alienX == x_ && alienY == y_ - 1)
     {
-        // Border at bottom
+        // Border or alien at bottom
         bottom = true;
     }
 
@@ -1037,21 +1028,25 @@ void Zombie::action(Board& game, Alien& alien)
         if (random == 0 && !up)
         {
             zombieUp(game);
+            cout << "Zombie " << symbol << "moves up." << endl;
             flag = true;
         }
         else if (random == 1 && !bottom)
         {
             zombieDown(game);
+            cout << "Zombie " << symbol << " moves down." << endl;
             flag = true;
         }
         else if (random == 2 && !left)
         {
             zombieLeft(game);
+            cout << "Zombie " << symbol << " moves left." << endl;
             flag = true;
         }
         else if (random == 3 && !right)
         {
             zombieRight(game);
+            cout << "Zombie " << symbol << " moves right." << endl;
             flag = true;
         }
     }
@@ -1064,10 +1059,12 @@ void Zombie::action(Board& game, Alien& alien)
             if (alienY > y_)
             {
                 zombieUp(game);
+                cout << "Zombie " << symbol << " moves up." << endl;
             }
             else if (alienY < y_)
             {
                 zombieDown(game);
+                cout << "Zombie " << symbol << " moves down." << endl;
             }
         }
         else
@@ -1076,23 +1073,50 @@ void Zombie::action(Board& game, Alien& alien)
             if (alienX > x_)
             {
                 zombieRight(game);
+                cout << "Zombie " << symbol << " moves right." << endl;
             }
             else if (alienX < x_)
             {
                 zombieLeft(game);
+                cout << "Zombie " << symbol << " moves left." << endl;
             }
         }
     }
+    cout << endl;
 
-    // Movement end
+
+}
+
+void Zombie::attack(Alien& alien)
+{
+    int alienX = alien.getX();
+    int alienY = alien.getY();
+
     // Check if alien is in range
     if (alienX >= x_ - range && alienX <= x_ + range && alienY >= y_ - range && alienY <= y_ + range)
     {
         // Attack Alien
+        cout << "Zombie " << symbol << " attacks Alien." << endl;
         int alienHp = alien.getHp();
         alienHp -= atk_;
-        alien.setHp(alienHp);
+        if (alienHp <= 0)
+        {
+            alien.setHp(0);
+            cout << "Alien dies." << endl;
+            gst = 4;
+        }
+        else
+        {
+            alien.setHp(alienHp);
+            cout << "Alien survives the attack." << endl;
+        }
     }
+    else 
+    {
+        cout << "Zombie " << symbol << " is unable to attack alien." << endl
+             << "Alien not within range of zombie " << symbol << "." << endl;
+    }
+    cout << endl;
 }
 
 void command(int &cst, int nzombie, Board &game, Alien &alien, Zombie *zombie)
