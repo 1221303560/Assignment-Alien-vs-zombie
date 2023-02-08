@@ -21,7 +21,6 @@ List all the features completed.
 List all the features not yet done. Remove this section if there is no incomplete requirements.
 
 1. Zombie movement and attack are completed but has not been implemented to the game due to time constrictions.
-Continuous gameplay
 2. Continuous gameplay
 3. Load and save
 4. Trail reset
