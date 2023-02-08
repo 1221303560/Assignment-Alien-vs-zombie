@@ -868,84 +868,218 @@ void Zombie::attack(Alien &alien)
     cout << endl;
 }
 
-void command(int &cst, int nzombie, Board &game, Alien &alien, Zombie *zombie)
+void getSettings(char settings)
+{
+    while (!cin.good() && settings != 'Y' && settings != 'N')
+    {
+        cout << "Please enter in only a character." << endl;
+        cin.clear();
+        cin.ignore();
+        cout << "Do you wish to change the game settings (y/n)? => ";
+        cin >> settings;
+        settings = toupper(settings);
+    }
+    
+    if (settings == 'Y')
+    {
+        cout << "Board Settings  " << endl;
+        cout << "----------------" << endl;
+
+        // Change board Rows //
+        cout << "Enter rows => ";
+        cin >> nrow;
+        while (!cin.good() || nrow % 2 == 0 || nrow < 3 || nrow > 29)
+        {
+            if (!cin.good())
+            {
+                cout << "Please enter odd numbers only" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter rows => ";
+                cin >> nrow;
+            }
+            if (nrow % 2 == 0)
+            {
+                cout << "Please enter odd numbers only" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter rows => ";
+                cin >> nrow;
+            }
+            if (nrow < 3)
+            {
+                cout << "Please enter odd numbers greater or equal to 3" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter rows => ";
+                cin >> nrow;
+            }
+            if (nrow > 29)
+            {
+                cout << "Maximum number of rows is 29" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter rows => ";
+                cin >> nrow;
+            }
+            else
+                break;
+        }
+
+        // Change board Columns //
+        cout << endl << "Enter columns => ";
+        cin >> ncolumn;
+        while (!cin.good() || ncolumn % 2 == 0 || ncolumn < 3 || ncolumn > 29)
+        {
+            if (!cin.good())
+            {
+                cout << "Please enter odd numbers only" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter columns => ";
+                cin >> ncolumn;
+            }
+            if (ncolumn % 2 == 0)
+            {
+                cout << "Please enter odd numbers only" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter columns => ";
+                cin >> ncolumn;
+            }
+            if (ncolumn < 8)
+            {
+                cout << "Please enter odd numbers greater or equal to 9" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter columns => ";
+                cin >> ncolumn;
+            }
+            if (ncolumn > 29)
+            {
+                cout << "Maximum number of columns is 29" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter columns => ";
+                cin >> ncolumn;
+            }
+            else
+                break;
+        }
+
+        // Change the Zombies //
+        cout << endl << "Enter number of zombies => ";
+        cin >> nzombie;
+        while (!cin.good() || nzombie <= 0 || nzombie > 9)
+        {
+            if (!cin.good())
+            {
+                cout << "Please enter numbers only" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter number of zombies => ";
+                cin >> nzombie;
+            }
+            if (nzombie <= 0)
+            {
+                cout << "Please enter positive numbers only and greater than 0" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter number of zombies => ";
+                cin >> nzombie;
+            }
+            if (nzombie > 9)
+            {
+                cout << "Maximum number of zombies is 9" << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Enter number of zombie => ";
+                cin >> nzombie;
+            }
+            else
+                break;
+        }
+        zombieLeft = nzombie;
+    }
+    else
+    {
+        ncolumn = 9;
+        nrow = 5;
+        nzombie = 1;
+        zombieLeft = 1;
+    }
+}
+
+void command()
 {
     string command;
     cout << "Command => ";
     cin >> command;
+    
+    while (!cin.good() && command != "up" && command != "down" && command != "left" && command != "right" 
+           && command != "arrow" && command != "help" && command != "save" && command != "load" && command != "quit")
+        {
+            cout << "Please enter a correct selection." << endl;
+            cin.clear();
+            cin.ignore();
+            cout << "Command => ";
+            cin >> command;
+            continue;
+        }
 
     if (command == "up")
-    {
-        game.display();
-        cout << "Alien decides to move up." << endl;
-        alien.alienUp(cst, nzombie, game, zombie);
-        system("pause");
+    {        
+        cst = 1;
+        mst = 1;
+        cout << "Player decides to move up." << endl;
     }
 
     else if (command == "down")
     {
-        game.display();
-        cout << "Alien decides to move down." << endl;
-        alien.alienDown(cst, nzombie, game, zombie);
-        system("pause");
+        cst = 2;
+        mst = 2;
+        cout << "Player decides to move down." << endl;
     }
 
     else if (command == "left")
     {
-        game.display();
-        cout << "Alien decides to move left." << endl;
-        alien.alienLeft(cst, nzombie, game, zombie);
-        system("pause");
+        cst = 3;
+        mst = 3;
+        cout << "Player decides to move left." << endl;
     }
 
     else if (command == "right")
     {
-        game.display();
-        cout << "Alien decides to move right." << endl;
-        alien.alienRight(cst, nzombie, game, zombie);
-        system("pause");
+        cst = 4;
+        mst = 4;
+        cout << "Player decides to move right." << endl;
     }
 
-    // else if (command == "arrow")
-    // {
-
-    // }
+    else if (command == "arrow")
+    {
+        cst = 5; // change direction of arrow
+    }
 
     else if (command == "help")
     {
-        cout << endl
-             << "Commands" << endl
-             << "1. up      - Move up." << endl
-             << "2. down    - Move down." << endl
-             << "3. left    - Move left." << endl
-             << "4. right   - Move right." << endl
-             << "5. arrow   - Change the direction of the arrow." << endl
-             << "6. help    - Display this user commands." << endl
-             << "7. save    - Save the game." << endl
-             << "8. load    - Load a game." << endl
-             << "9. quit    - Quit the game." << endl;
-        system("pause");
+        cst = 6; // user asks for help
     }
 
     // else if (command == "save")
     // {
-
+        // cst = 7;
     // }
 
     // else if (command == "load")
     // {
-
+        // cst = 8;
     // }
 
     else if (command == "quit")
     {
+        cst = 9;
     }
 
-    else
-    {
-        cout << "Please enter a correct selection!" << endl
-             << endl;
-    }
 }
 
 int maingame()
