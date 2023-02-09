@@ -112,7 +112,7 @@ public:
     void attack(Alien& alien);
 };
 
-Zombie zombie[9];
+Zombie zombie[10];
 
 Board::Board() // Default Game Settings Rows : 5 Columns : 9
 {
