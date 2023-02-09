@@ -1082,255 +1082,335 @@ void command()
 
 }
 
-int maingame()
+void displayStatus(Alien player, int j)
 {
-    int ncolumn, nrow, nzombie;
+    if (gst == 1)
+    {
+        cout << "->  Alien       : Life " 
+             << player.getHp() << ", Attack " << player.getAtk() << endl;
+        
+        for (int i = 1; i <= nzombie; i++)
+        { 
+            cout << "    Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                 << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+        }
+        cout << endl;
+    }
+    else if (gst == 2)
+    {
+        cout << "    Alien       : Life " 
+             << player.getHp() << ", Attack " << player.getAtk() << endl;
+        
+        for (int i = 1; i <= nzombie; i++)
+        {
+            if (i == j)
+            {
+                cout << "->  Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                     << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+            }
+            else
+            {
+                cout << "    Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                     << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+            }
+        }
+        cout << endl;
+    }
+}
+
+void maingame()
+{
     char settings;
 
     cout << "Default Game Settings" << endl;
     cout << "---------------------" << endl;
     cout << "Board Rows   : 5" << endl;
     cout << "Board Colums : 9" << endl;
-    cout << "Zombie Count : 1" << endl;
-
+    cout << "Zombie Count : 1" << endl << endl;
+    
     cout << "Do you wish to change the game settings (y/n)? => ";
     cin >> settings;
+    settings = toupper(settings);
+    getSettings(settings);
 
-    while (true)
-    {
-        if (settings == 'y' | settings == 'Y')
-        {
-            cout << "Board Settings  " << endl;
-            cout << "----------------" << endl;
-
-            // Change the rows //
-            cout << "Enter rows => ";
-            cin >> nrow;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow % 2 == 0)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow < 3)
-                {
-                    cout << "Please enter odd numbers greater or equal to 3" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow > 29)
-                {
-                    cout << "Maximum number of rows is 29" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                else
-                    break;
-            }
-
-            // Change the Columns //
-            cout << "Enter columns => ";
-            cin >> ncolumn;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn % 2 == 0)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn < 8)
-                {
-                    cout << "Please enter odd numbers greater or equal to 9" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn > 29)
-                {
-                    cout << "Maximum number of columns is 29" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                else
-                    break;
-            }
-
-            // Change the Zombies //
-            cout << "" << endl;
-            cout << "Enter number of zombies => ";
-            cin >> nzombie;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombies => ";
-                    cin >> nzombie;
-                }
-                if (nzombie <= 0)
-                {
-                    cout << "Please enter positive numbers only and greater than 0" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombies => ";
-                    cin >> nzombie;
-                }
-                if (nzombie > 9)
-                {
-                    cout << "Maximum number of zombies is 9" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombie => ";
-                    cin >> nzombie;
-                }
-                else
-                    break;
-            }
-            break;
-        }
-
-        else if (settings == 'n' | settings == 'N')
-        {
-            ncolumn = 9;
-            nrow = 5;
-            nzombie = 1;
-            break;
-        }
-
-        else
-        {
-            cout << "Please enter in only a character." << endl;
-            cout << "Do you wish to change the game settings (y/n)? => ";
-            cin >> settings;
-            continue;
-        }
-    }
-
-    int x1 = ncolumn / 2 + 1;
-    int y1 = nrow / 2 + 1;
+    // initial alien position
+    int x1 = ncolumn/2 + 1;
+    int y1 = nrow/2 + 1;
     char ch1 = 'A';
-
+    
+    // declaring game objects
     Board game(ncolumn, nrow);
     Alien player(x1, y1, ch1);
     player.setAlien(x1, y1, game);
-    Zombie zombie[9];
 
-    // cout << "nzombie = " << nzombie;
-    for (int i = 1; i <= nzombie; i++)
+    for (int i = 1; i <= nzombie; i++) // puts zombies into the board
     {
         char ch = i + '0';
         zombie[i].setSymbol(ch);
 
         int x = rand() % ncolumn + 1;
         int y = rand() % nrow + 1;
+        
+        char chZombie = game.getObject(x, y);
 
-        while (x == x1)
+        while (x == x1 && y == y1 || chZombie > 48 && chZombie < 57)
         {
             x = rand() % (ncolumn + 1);
-        }
-
-        while (y == y1)
-        {
             y = rand() % (nrow + 1);
         }
-
         zombie[i].setZombie(x, y, game);
     }
 
-    game.display();
-
-    int cst = 0;
-
-    cout << "Alien       : Life "
-         << player.getHp() << ", Attack" << player.getAtk() << endl;
-
-    for (int i = 1; i <= nzombie; i++)
+    do
     {
-        cout << "Zombie " << i << "     : Life "
-             << zombie[i].getHp() << ", Range " << zombie[i].getRange() << endl
-             << endl;
-    }
-
-    while (true)
-    {
-        command(cst, nzombie, game, player, zombie);
-        if (cst == 1) // move up
+        if (gst == 1) // player turn
         {
-            cout << "Alien continues to move up." << endl;
             game.display();
-            player.alienUp(cst, nzombie, game, zombie);
-        }
+            displayStatus(player, 0);
+            cout << "Alien turn." << endl << endl;
+            system("pause");
 
-        else if (cst == 2) // move down
-        {
-            cout << "Alien continues to move down." << endl;
             game.display();
-            player.alienDown(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 3) // move left
-        {
-            cout << "Alien continues to move left." << endl;
-            game.display();
-            player.alienLeft(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 4) // move right
-        {
-            cout << "Alien continues to move right." << endl;
-            game.display();
-            player.alienRight(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 5) // stop
-        {
-            cout << "Alien move ends." << endl;
-            for (int i = 1; i <= nzombie; i++)
+            displayStatus(player, 0);
+            command();
+            
+            switch (cst)
             {
-                zombie[i].action(game, player);
+                case 1: // player enter command up
+                case 2: // player enter command down
+                case 3: // player enter command left
+                case 4: // player enter command right
+                {
+                    pst = 0;
+                    while (pst != 20 && gst != 3)
+                    {
+                        game.display();
+                        displayStatus(player, 0);
+                        player.alienCheckNext(game);
+                        player.alienAction(game);
+                        cout << endl;
+                        system("pause");
+                        if (zombieLeft == 0)
+                        {
+                            gst = 3;
+                            break;
+                        }
+                    }
+                    if (pst == 20) // alien stopped by object
+                    {
+                        game.display();
+                        displayStatus(player, 0);
+                        cout << "Alien turn ends." << endl << endl;
+                        system("pause");
+                        gst = 2; // zombies turn
+                    }
+                    break;
+                }
+
+                case 5: // player enter command arrow
+                {
+                    int x, y;
+                    string arrow;
+                    cout << "Please enter coordinates and direction of arrow (x y direction)." << endl
+                        << "-> ";
+                    cin >> x >> y >> arrow;
+
+                    while (!cin.good() || x <= 0 || x > ncolumn || y <= 0 || y > nrow ||
+                        arrow != "up" || arrow != "down" || arrow != "left" || arrow != "right")
+                    {
+                        cin.clear();
+                        cin.ignore();
+                        cout << "Please enter correct coordinates and directions." << endl;
+                    }
+
+                    char ch = game.getObject(x, y);
+
+                    if (ch == '^' || ch == 'v' || ch == '<' || ch == '<')
+                    {
+                        if (arrow == "up")
+                        {
+                            game.setObject(x, y, '^');
+                        }
+                        else if (arrow == "down")
+                        {
+                            game.setObject(x, y, 'v');
+                        }
+                        else if (arrow == "left")
+                        {
+                            game.setObject(x, y, '<');
+                        }
+                        else if (arrow == "right")
+                        {
+                            game.setObject(x, y, '>');
+                        }
+                        cout << "Arrow set." << endl;
+                    }
+                    else
+                    {
+                        cout << "Arrow not found." << endl;
+                    }
+                    system("pause");
+                    break;
+                }
+
+                case 6: // player asks for help
+                {
+                    cout << endl
+                        << "Commands:" << endl
+                        << "1. up      - Move up." << endl
+                        << "2. down    - Move down." << endl
+                        << "3. left    - Move left." << endl
+                        << "4. right   - Move right." << endl
+                        << "5. arrow   - Change the direction of the arrow." << endl
+                        << "6. help    - Display this user commands." << endl
+                        << "7. save    - Save the game." << endl
+                        << "8. load    - Load a game." << endl
+                        << "9. quit    - Quit the game." << endl;
+                    system("pause");
+                    break;
+                }
+
+                // case 7: // player enter save
+                // {
+                    
+                // }
+
+                // case 8: // player enter load
+                // {
+
+                // }
+
+                case 9: // player enter quit
+                {
+                    char input;
+                    cout << "Any unsaved progress will be lost." << endl
+                        << "Are you sure to quit game y/n ?" << endl;
+                    cin >> input;
+                    input = toupper(input);
+                    
+                    while (!cin.good() && input != 'Y' && input != 'N')
+                    {
+                        cout << "Please enter in only a character." << endl;
+                        cin.clear();
+                        cin.ignore();
+                        cout << "Are you sure to quit game (y/n)? => ";
+                        cin >> input;
+                        input = toupper(input);
+                    }
+
+                    if (input == 'Y')
+                    {
+                        gst = 5;
+                    }         
+                    else 
+                    {
+                        break;
+                    }
+                }    
             }
         }
 
-        continue;
-    }
+        else if (gst == 2)
+        {
+            // remove alien trail
+            for (int i = 1; i <= game.getDimY(); i++)
+            {
+                    for (int j = 1; j <= game.getDimX(); j++)
+                    {
+                        if (game.getObject(j, i) == '.')
+                        {
+                            game.setObject(j, i, ' ');
+                        }
+                    }
+            }
+            // zombie action
+            for (int i = 1; i <= nzombie; i++)
+            {
+                game.display();
+                displayStatus(player, i);
+                cout << "Zombie " << i << " turn." << endl << endl;
+                system("pause");
+
+                if (zombie[i].getHp() != 0) // zombie alive
+                {
+                    game.display();
+                    displayStatus(player, i);
+                    zombie[i].movement(game, player);
+                    system("pause");
+
+                    game.display();
+                    displayStatus(player, i);
+                    zombie[i].attack(player);
+                    system("pause");
+                }
+                else // zombie dead
+                {
+                    cout << "Zombie " << i << " is still dead." << endl;
+                }
+                game.display();
+                displayStatus(player, i);
+                cout << "Zombie " << i << " turn ends." << endl << endl;
+                system("pause");
+            }
+            gst = 1;
+        }
+    }while (gst != 3 && gst != 4 && gst != 5);
 }
+
 
 int main()
 {
     srand(1); // use this for fixed map during testing
     // srand(time(NULL)); // try this for random map
 
-    maingame();
+    int flag = 1;
+    while (flag == 1)
+    {
+        maingame(); // gst = 1, gst = 2
+        
+        if (gst == 3 || gst == 4)
+        {
+            if (gst == 3)
+            {
+                cout << "Alien wins the game." << endl
+                    << "Victory!" << endl << endl;
+            }
+            else if (gst == 4)
+            {
+                cout << "You lose." << endl
+                    << "Game Over" << endl << endl;
+            }
+
+            char input;
+            cout << "Do you want to play again (y/n) ?" << endl
+                 << "-> ";
+                cin >> input;
+                input = toupper(input);
+                
+            while (!cin.good() && input != 'Y' && input != 'N')
+            {
+                cout << "Please enter in only a character." << endl;
+                cin.clear();
+                cin.ignore();
+                cout << "Do you want to play again (y/n)? => ";
+                cin >> input;
+                input = toupper(input);
+            }
+            if (input == 'Y')
+            {
+            }
+            else
+            {
+                cout << "See you next time!" << endl;
+                flag = 0;
+            }
+        }
+        else
+        {
+            cout << "See you next time!" << endl;
+            flag = 0;
+        }
+        continue;
+    }
+    return 0;
 }
