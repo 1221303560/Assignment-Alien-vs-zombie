@@ -83,33 +83,33 @@ class Zombie
 private:
     char symbol;
     int x_, y_;
-    int hp_, atk_, range;
+    int hp_, atk_, range_;
 
 public:
     Zombie();
 
-    int getSymbol() const;
+    char getSymbol() const;
     int getX() const;
     int getY() const;
     int getHp() const;
     int getAtk() const;
     int getRange() const;
-    int getZombieX() const;
-    int getZombieY() const;
 
-    void setHp(int hp);
     void setSymbol(char ch);
     void setX(int x);
     void setY(int y);
+    void setHp(int hp);
+    void setAtk(int atk);
+    void setRange(int range);
     void setZombie(int x, int y, Board &game);
 
-    void zombieUp(Board &game);
-    void zombieDown(Board &game);
-    void zombieLeft(Board &game);
-    void zombieRight(Board &game);
+    void zombieUp(Board& game);
+    void zombieDown(Board& game);
+    void zombieLeft(Board& game);
+    void zombieRight(Board& game);
 
-    void movement(Board &game, Alien &alien);
-    void attack(Alien &alien);
+    void movement(Board& game, Alien& alien);
+    void attack(Alien& alien);
 };
 
 Zombie zombie[9];
@@ -651,7 +651,12 @@ Zombie::Zombie()
 {
     hp_ = (rand() % 5 + 2) * 50;
     atk_ = (rand() % 5 + 1) * 5;
-    range = rand() % 3 + 1;
+    range_ = rand() % 3 + 1;
+}
+
+char Zombie::getSymbol() const
+{
+    return symbol;
 }
 
 int Zombie::getX() const
@@ -676,17 +681,22 @@ int Zombie::getAtk() const
 
 int Zombie::getRange() const
 {
-    return range;
+    return range_;
 }
 
-int Zombie::getZombieX() const
+void Zombie::setSymbol(char ch)
 {
-    return x_;
+    symbol = ch;
 }
 
-int Zombie::getZombieY() const
+void Zombie::setX(int x)
 {
-    return y_;
+    x_ = x;
+}
+
+void Zombie::setY(int y)
+{
+    y_ = y;
 }
 
 void Zombie::setHp(int hp)
@@ -694,9 +704,14 @@ void Zombie::setHp(int hp)
     hp_ = hp;
 }
 
-void Zombie::setSymbol(char ch)
+void Zombie::setAtk(int atk)
 {
-    symbol = ch;
+    atk_ = atk;
+}
+
+void Zombie::setRange(int range)
+{
+    range_ = range;
 }
 
 void Zombie::setZombie(int x, int y, Board &game)
@@ -842,7 +857,7 @@ void Zombie::attack(Alien &alien)
     int alienY = alien.getY();
 
     // Check if alien is in range
-    if (alienX >= x_ - range && alienX <= x_ + range && alienY >= y_ - range && alienY <= y_ + range)
+    if (alienX >= x_ - range_ && alienX <= x_ + range_ && alienY >= y_ - range_ && alienY <= y_ + range_)
     {
         // Attack Alien
         cout << "Zombie " << symbol << " attacks Alien." << endl;
