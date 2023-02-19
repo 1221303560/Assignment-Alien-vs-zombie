@@ -1081,7 +1081,119 @@ void displayStatus(Alien player, int j)
             }
         }
         cout << endl;
-    }   
+    }
+        
+}
+
+void saveGame(string filename, Board &game, Alien &alien, bool &saved)
+{
+    fstream myFile;
+    filename = filename + ".txt";
+    myFile.open(filename, ios::out);
+    if (myFile.is_open())
+    {
+        // write game settings
+        myFile << nrow << " " << ncolumn << " " << nzombie << " " << zombieLeft << endl << endl;
+
+        // write alien status
+        myFile << alien.getX() << " " << alien.getY() << " " << alien.getHp() << " " << alien.getAtk() << endl << endl;
+        
+        // write zombie status
+        for (int i = 1; i <= nzombie; i++)
+        {
+            myFile << zombie[i].getSymbol() << " " << zombie[i].getX() << " " << zombie[i].getY() << " " << zombie[i].getHp() 
+            << " " << zombie[i].getAtk() << " " << zombie[i].getRange() << endl;
+        }
+        
+        // write board
+        for (int j = 1; j <= nrow; j++) // for y dim
+        {
+            for (int i = 1; i <= ncolumn; i++) // for x dim
+            {
+                char ch = game.getObject(i, j);
+                myFile << ch;
+            }
+            myFile << endl;
+        }
+        saved = 1;
+    }
+    else
+    {
+        saved = 0;
+    }
+    myFile.close();
+}
+
+void loadGame(string filename, Board &game, Alien &alien, bool &loaded)
+{
+    fstream myFile;
+    filename = filename + ".txt";
+
+    int i = 1;
+    int k = 0; // ncolumn
+    string line;
+
+    myFile.open(filename, ios::in);
+
+    int map_start; // defines the line where map object starts
+
+    if (myFile.is_open())
+    {
+        while (getline (myFile, line))
+        {
+            i = i + 1;
+
+            if (i == 1) // read and set game settings
+            {
+                myFile >> nrow >> ncolumn >> nzombie >> zombieLeft;
+                map_start = 4 + nzombie;
+                game.init(ncolumn, nrow);
+            }
+
+            else if (i == 3) // read and set alien status
+            {
+                int alienX, alienY, alienHp, alienAtk;
+                myFile >> alienX >> alienY >> alienHp >> alienAtk;
+
+                alien.setAlien(alienX, alienY, game);
+                alien.setHp(alienHp);
+                alien.setAtk(alienAtk);
+            }
+            
+            else if (i > 3 && i <= map_start ) // read and set zombie status
+            {
+                char symbol;
+                int x, y, hp, atk, range;
+                myFile >> symbol >> x >> y >> hp >> atk >> range;
+
+                zombie[i].setSymbol(symbol);
+                zombie[i].setX(x);
+                zombie[i].setY(y);
+                zombie[i].setHp(hp);
+                zombie[i].setAtk(atk);
+                zombie[i].setRange(range);
+            }
+
+            else if (i > map_start) // read and set board
+            {
+                string boardline;
+                myFile >> boardline;
+
+                for (int j = 1; j <= ncolumn; j++)
+                {
+                    char ch = boardline[j-1];
+                    game.setObject(j, k, ch);
+                }
+                k = k + 1;
+            }
+        }
+        loaded = 1;
+    }
+    else
+    {
+        loaded = 0;
+    }
+    myFile.close();
 }
 
 void maingame()
@@ -1264,12 +1376,46 @@ void maingame()
 
                 case 7: // player enter save
                 {
-                    
+                    bool saved = 0;
+                    string filename;
+                    cout << "Enter the file name (without .txt) to save the current game." << endl
+                         << "-> ";
+                    cin >> filename;
+                    saveGame(filename, game, player, saved);
+                    if (saved)
+                    {
+                        cout << "Game saved." << endl << endl;
+                    }
+                    else
+                    {
+                        cout << "Game not saved." << endl
+                             << "Please check filename and/or read write permissions." << endl << endl;
+                    }
+                    system("pause");
+                    break;
                 }
 
                 case 8: // player enter load
                 {
-                    
+                    bool loaded = 0;
+
+                    string filename;
+                    cout << "Enter the file name (without .txt) to load the current game." << endl
+                         << "-> ";
+                    cin >> filename;
+
+                    loadGame(filename, game, player, loaded);
+                    if (loaded)
+                    {
+                        cout << "Game loaded." << endl << endl;
+                    }
+                    else
+                    {
+                        cout << "Game not loaded." << endl
+                             << "Please check filename and/or read write permissions." << endl << endl;
+                    }
+                    system("pause");
+                    break;
                 }
 
                 case 9: // player enter quit
