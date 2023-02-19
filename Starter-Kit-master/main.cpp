@@ -1048,155 +1048,314 @@ void command()
 
 }
 
-    else if (command == "quit")
+void displayStatus(Alien player, int j)
+{
+    if (gst == 1)
     {
+        cout << "->  Alien       : Life " 
+             << player.getHp() << ", Attack " << player.getAtk() << endl;
+        
+        for (int i = 1; i <= nzombie; i++)
+        { 
+            cout << "    Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                 << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+        }
+        cout << endl;
     }
-
-    else
+    else if (gst == 2)
     {
-        cout << "Please enter a correct selection!" << endl
-             << endl;
+        cout << "    Alien       : Life " 
+             << player.getHp() << ", Attack " << player.getAtk() << endl;
+        
+        for (int i = 1; i <= nzombie; i++)
+        {
+            if (i == j)
+            {
+                cout << "->  Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                     << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+            }
+            else
+            {
+                cout << "    Zombie " << i << "    : Life " << zombie[i].getHp() << ", Attack " 
+                     << zombie[i].getAtk() << ", Range " << zombie[i].getRange() << endl;
+            }
+        }
+        cout << endl;
     }
+        
 }
 
-int maingame()
+void saveGame(string filename, Board &game, Alien &alien, bool &saved)
 {
-    int ncolumn, nrow, nzombie;
+    fstream myFile;
+    filename = filename + ".txt";
+    myFile.open(filename, ios::out);
+    if (myFile.is_open())
+    {
+        // write game settings
+        myFile << nrow << " " << ncolumn << " " << nzombie << " " << zombieLeft << endl << endl;
+
+        // write alien status
+        myFile << alien.getX() << " " << alien.getY() << " " << alien.getHp() << " " << alien.getAtk() << endl << endl;
+        
+        // write zombie status
+        for (int i = 1; i <= nzombie; i++)
+        {
+            myFile << zombie[i].getSymbol() << " " << zombie[i].getX() << " " << zombie[i].getY() << " " << zombie[i].getHp() 
+            << " " << zombie[i].getAtk() << " " << zombie[i].getRange() << endl;
+        }
+        
+        // write board
+        for (int j = 1; j <= nrow; j++) // for y dim
+        {
+            for (int i = 1; i <= ncolumn; i++) // for x dim
+            {
+                char ch = game.getObject(i, j);
+                myFile << ch;
+            }
+            myFile << endl;
+        }
+        saved = 1;
+    }
+    else
+    {
+        saved = 0;
+    }
+    myFile.close();
+}
+
+void loadGame(string filename, Board &game, Alien &alien, bool &loaded)
+{
+    fstream myFile;
+    filename = filename + ".txt";
+
+    int i = 1;
+    int k = 0; // ncolumn
+    string line;
+
+    myFile.open(filename, ios::in);
+
+    int map_start; // defines the line where map object starts
+
+    if (myFile.is_open())
+    {
+        while (getline (myFile, line))
+        {
+            i = i + 1;
+
+            if (i == 1) // read and set game settings
+            {
+                myFile >> nrow >> ncolumn >> nzombie >> zombieLeft;
+                map_start = 4 + nzombie;
+                game.init(ncolumn, nrow);
+            }
+
+            else if (i == 3) // read and set alien status
+            {
+                int alienX, alienY, alienHp, alienAtk;
+                myFile >> alienX >> alienY >> alienHp >> alienAtk;
+
+                alien.setAlien(alienX, alienY, game);
+                alien.setHp(alienHp);
+                alien.setAtk(alienAtk);
+            }
+            
+            else if (i > 3 && i <= map_start ) // read and set zombie status
+            {
+                char symbol;
+                int x, y, hp, atk, range;
+                myFile >> symbol >> x >> y >> hp >> atk >> range;
+
+                zombie[i].setSymbol(symbol);
+                zombie[i].setX(x);
+                zombie[i].setY(y);
+                zombie[i].setHp(hp);
+                zombie[i].setAtk(atk);
+                zombie[i].setRange(range);
+            }
+
+            else if (i > map_start) // read and set board
+            {
+                string boardline;
+                myFile >> boardline;
+
+                for (int j = 1; j <= ncolumn; j++)
+                {
+                    char ch = boardline[j-1];
+                    game.setObject(j, k, ch);
+                }
+                k = k + 1;
+            }
+        }
+        loaded = 1;
+    }
+    else
+    {
+        loaded = 0;
+    }
+    myFile.close();
+}
+
+void maingame()
+{
+    mst = 0;        // alien movement state
+    pst = 0;        // alien player state
+    gst = 1;        // game state, 1 = player turn, 11-19 = zombie turn, 3 = alien wins, 4 = alien loses, 5 = quit game
+    cst = 0;        // player command state
+    nzombie = 0;    // number of zombies (save)
+    zombieLeft = 0; // number of zombie alive in game (save)
+    nrow = 0;       // number of rows in board (save)
+    ncolumn = 0;    // number of columns in board (save)
+    system("cls");
     char settings;
 
     cout << "Default Game Settings" << endl;
     cout << "---------------------" << endl;
     cout << "Board Rows   : 5" << endl;
     cout << "Board Colums : 9" << endl;
-    cout << "Zombie Count : 1" << endl;
+    cout << "Zombie Count : 1" << endl << endl;
+    
+    getSettings();
 
-    cout << "Do you wish to change the game settings (y/n)? => ";
-    cin >> settings;
+    // initial alien position
+    int x1 = ncolumn/2 + 1;
+    int y1 = nrow/2 + 1;
+    char ch1 = 'A';
+    
+    // declaring game objects
+    Board game(ncolumn, nrow);
+    Alien player(x1, y1, ch1);
+    player.setAlien(x1, y1, game);
 
-    while (true)
+    for (int i = 1; i <= nzombie; i++) // puts zombies into the board
     {
-        if (settings == 'y' | settings == 'Y')
+        char ch = i + '0';
+        zombie[i].setSymbol(ch);
+        
+        int hp = (rand() % 5 + 2) * 50; 
+        int atk = (rand() % 5 + 1) * 5;
+        int range = rand() % 3 + 1;
+        zombie[i].setHp(hp);
+        zombie[i].setAtk(atk);
+        zombie[i].setRange(range);
+
+        int x = rand() % ncolumn + 1;
+        int y = rand() % nrow + 1;
+        
+        char chZombie = game.getObject(x, y);
+
+        while (x == x1 && y == y1 || chZombie > 48 && chZombie < 57) // check for existing alien or zombie on random coordinate
         {
-            cout << "Board Settings  " << endl;
-            cout << "----------------" << endl;
-
-            // Change the rows //
-            cout << "Enter rows => ";
-            cin >> nrow;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow % 2 == 0)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow < 3)
-                {
-                    cout << "Please enter odd numbers greater or equal to 3" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                if (nrow > 29)
-                {
-                    cout << "Maximum number of rows is 29" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter rows => ";
-                    cin >> nrow;
-                }
-                else
-                    break;
-            }
-
-            // Change the Columns //
-            cout << "Enter columns => ";
-            cin >> ncolumn;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn % 2 == 0)
-                {
-                    cout << "Please enter odd numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn < 8)
-                {
-                    cout << "Please enter odd numbers greater or equal to 9" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                if (ncolumn > 29)
-                {
-                    cout << "Maximum number of columns is 29" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter columns => ";
-                    cin >> ncolumn;
-                }
-                else
-                    break;
-            }
-
-            // Change the Zombies //
-            cout << "" << endl;
-            cout << "Enter number of zombies => ";
-            cin >> nzombie;
-            while (true)
-            {
-                if (!cin)
-                {
-                    cout << "Please enter numbers only" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombies => ";
-                    cin >> nzombie;
-                }
-                if (nzombie <= 0)
-                {
-                    cout << "Please enter positive numbers only and greater than 0" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombies => ";
-                    cin >> nzombie;
-                }
-                if (nzombie > 9)
-                {
-                    cout << "Maximum number of zombies is 9" << endl;
-                    cin.clear();
-                    cin.ignore();
-                    cout << "Enter number of zombie => ";
-                    cin >> nzombie;
-                }
-                else
-                    break;
-            }
-            break;
+            x = rand() % (ncolumn + 1);
+            y = rand() % (nrow + 1);
+            chZombie = game.getObject(x, y);
+            cout << "Zombie " << i << " set!" << endl;
         }
+        zombie[i].setZombie(x, y, game);
+    }
+
+    do
+    {
+        if (gst == 1) // player turn
+        {
+            game.display();
+            displayStatus(player, 0);
+            cout << "Alien's turn." << endl << endl;
+            system("pause");
+
+            game.display();
+            displayStatus(player, 0);
+            command();
+            
+            switch (cst)
+            {
+                case 1: // player enter command up
+                case 2: // player enter command down
+                case 3: // player enter command left
+                case 4: // player enter command right
+                {
+                    pst = 0;
+                    while (pst != 20 && gst != 3)
+                    {
+                        game.display();
+                        displayStatus(player, 0);
+                        player.alienCheckNext(game);
+                        player.alienAction(game);
+                        cout << endl;
+                        system("pause");
+                        if (zombieLeft == 0)
+                        {
+                            gst = 3;
+                            break;
+                        }
+                    }
+                    if (pst == 20) // alien stopped by object
+                    {
+                        game.display();
+                        displayStatus(player, 0);
+                        // cout << "Alien turn ends." << endl << endl;
+                        // system("pause");
+                        if (zombieLeft == 0)
+                        {
+                            gst = 3;
+                            break;
+                        }
+                        else
+                        {
+                            cout << "Alien turn ends." << endl << endl;
+                            system("pause");
+                            gst = 2; // zombies turn
+                        }
+                    }
+                    break;
+                }
+
+                case 5: // player enter command arrow
+                {
+                    int x, y;
+                    string arrow;
+                    cout << "Please enter coordinates and direction of arrow (eg. 1 5 right)." << endl
+                        << "-> ";
+                    cin >> x >> y >> arrow;
+
+                    while (!cin.good() || x <= 0 || x > ncolumn || y <= 0 || y > nrow ||
+                        arrow != "up" && arrow != "down" && arrow != "left" && arrow != "right")
+                    {
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        cout << "Please enter correct coordinates and directions." << endl;
+                        break;
+                    }
+
+                    char ch = game.getObject(x, y);
+
+                    if (ch == '^' || ch == 'v' || ch == '<' || ch == '>')
+                    {
+                        if (arrow == "up")
+                        {
+                            game.setObject(x, y, '^');
+                        }
+                        else if (arrow == "down")
+                        {
+                            game.setObject(x, y, 'v');
+                        }
+                        else if (arrow == "left")
+                        {
+                            game.setObject(x, y, '<');
+                        }
+                        else if (arrow == "right")
+                        {
+                            game.setObject(x, y, '>');
+                        }
+                        cout << "Arrow set." << endl;
+                    }
+                    else
+                    {
+                        cout << "Arrow not found." << endl;
+                    }
+                    system("pause");
+                    break;
+                }
 
                 case 6: // player asks for help
                 {
@@ -1215,111 +1374,173 @@ int maingame()
                     break;
                 }
 
-        else
-        {
-            cout << "Please enter in only a character." << endl;
-            cout << "Do you wish to change the game settings (y/n)? => ";
-            cin >> settings;
-            continue;
-        }
-    }
+                case 7: // player enter save
+                {
+                    bool saved = 0;
+                    string filename;
+                    cout << "Enter the file name (without .txt) to save the current game." << endl
+                         << "-> ";
+                    cin >> filename;
+                    saveGame(filename, game, player, saved);
+                    if (saved)
+                    {
+                        cout << "Game saved." << endl << endl;
+                    }
+                    else
+                    {
+                        cout << "Game not saved." << endl
+                             << "Please check filename and/or read write permissions." << endl << endl;
+                    }
+                    system("pause");
+                    break;
+                }
 
-    int x1 = ncolumn / 2 + 1;
-    int y1 = nrow / 2 + 1;
-    char ch1 = 'A';
+                case 8: // player enter load
+                {
+                    bool loaded = 0;
 
-    Board game(ncolumn, nrow);
-    Alien player(x1, y1, ch1);
-    player.setAlien(x1, y1, game);
-    Zombie zombie[9];
+                    string filename;
+                    cout << "Enter the file name (without .txt) to load the current game." << endl
+                         << "-> ";
+                    cin >> filename;
 
-    // cout << "nzombie = " << nzombie;
-    for (int i = 1; i <= nzombie; i++)
-    {
-        char ch = i + '0';
-        zombie[i].setSymbol(ch);
+                    loadGame(filename, game, player, loaded);
+                    if (loaded)
+                    {
+                        cout << "Game loaded." << endl << endl;
+                    }
+                    else
+                    {
+                        cout << "Game not loaded." << endl
+                             << "Please check filename and/or read write permissions." << endl << endl;
+                    }
+                    system("pause");
+                    break;
+                }
 
-        int x = rand() % ncolumn + 1;
-        int y = rand() % nrow + 1;
+                case 9: // player enter quit
+                {
+                    char input;
+                    cout << "Any unsaved progress will be lost." << endl
+                        << "Are you sure to quit game y/n ?" << endl;
+                    cin >> input;
+                    input = toupper(input);
+                    
+                    while (!cin.good() && input != 'Y' && input != 'N')
+                    {
+                        cout << "Please enter in only a character." << endl;
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        cout << "Are you sure to quit game (y/n)? => ";
+                        cin >> input;
+                        input = toupper(input);
+                    }
 
-        while (x == x1)
-        {
-            x = rand() % (ncolumn + 1);
-        }
-
-        while (y == y1)
-        {
-            y = rand() % (nrow + 1);
-        }
-
-        zombie[i].setZombie(x, y, game);
-    }
-
-    game.display();
-
-    int cst = 0;
-
-    cout << "Alien       : Life "
-         << player.getHp() << ", Attack" << player.getAtk() << endl;
-
-    for (int i = 1; i <= nzombie; i++)
-    {
-        cout << "Zombie " << i << "     : Life "
-             << zombie[i].getHp() << ", Range " << zombie[i].getRange() << endl
-             << endl;
-    }
-
-    while (true)
-    {
-        command(cst, nzombie, game, player, zombie);
-        if (cst == 1) // move up
-        {
-            cout << "Alien continues to move up." << endl;
-            game.display();
-            player.alienUp(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 2) // move down
-        {
-            cout << "Alien continues to move down." << endl;
-            game.display();
-            player.alienDown(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 3) // move left
-        {
-            cout << "Alien continues to move left." << endl;
-            game.display();
-            player.alienLeft(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 4) // move right
-        {
-            cout << "Alien continues to move right." << endl;
-            game.display();
-            player.alienRight(cst, nzombie, game, zombie);
-        }
-
-        else if (cst == 5) // stop
-        {
-            cout << "Alien move ends." << endl;
-            for (int i = 1; i <= nzombie; i++)
-            {
-                zombie[i].action(game, player);
+                    if (input == 'Y')
+                    {
+                        gst = 5;
+                    }         
+                    else 
+                    {
+                    }
+                    break;
+                }    
             }
         }
 
-        continue;
+        else if (gst == 2)
+        {
+            // alien attack return to 0
+            player.setAtk(0);
+            // remove alien trail and set random game objects
+            char objects[] = {' ', ' ', ' ', '<', '>', '^', 'h', 'r', 'p', 'v'};
+            int noOfObjects = 10; // number of objects in the objects array
+            for (int i = 1; i <= game.getDimY(); i++)
+            {
+                    for (int j = 1; j <= game.getDimX(); j++)
+                    {
+                        if (game.getObject(j, i) == '.')
+                        {
+                            int objNo = rand() % noOfObjects;
+                            game.setObject(j, i, objects[objNo]);
+                        }
+                    }
+            }
+            // zombie action
+            for (int i = 1; i <= nzombie; i++)
+            {
+                game.display();
+                displayStatus(player, i);
+                cout << "Zombie " << i << " turn." << endl << endl;
+                system("pause");
+
+                if (zombie[i].getHp() != 0) // zombie alive
+                {
+                    game.display();
+                    displayStatus(player, i);
+                    zombie[i].movement(game, player);
+                    system("pause");
+
+                    game.display();
+                    displayStatus(player, i);
+                    zombie[i].attack(player);
+                    system("pause");
+
+                    if (gst == 4)
+                    {
+                        break;
+                    }
+                }
+                else // zombie dead
+                {
+                    cout << "Zombie " << i << " is still dead." << endl;
+                    system("pause");
+                }
+                game.display();
+                displayStatus(player, i);
+                cout << "Zombie " << i << " turn ends." << endl << endl;
+                system("pause");
+            }
+
+            if (gst == 4)
+            {
+                break;
+            }
+            else
+            {
+                gst = 1;
+            }
+        }
+    }while (gst != 3 && gst != 4 && gst != 5);
+
+    if (gst == 3)
+    {
+        game.display();
+        displayStatus(player, 0);
+        cout << "Alien wins the game." << endl
+             << "Victory!" << endl
+             << endl;
+    }
+    else if (gst == 4)
+    {
+        game.display();
+        displayStatus(player, 0);
+        cout << "You lose." << endl
+             << "Game Over" << endl
+             << endl;
     }
 }
+
 
 int main()
 {
     srand(1); // use this for fixed map during testing
     // srand(time(NULL)); // try this for random map
 
-    maingame();
-}
+    int flag = 1;
+    while (flag == 1)
+    {
+        maingame(); // gst = 1, gst = 2, gst = 3, gst = 4
 
         // after gst = 3 and gst = 4, or gst = 5
         if (gst == 3 || gst == 4)
