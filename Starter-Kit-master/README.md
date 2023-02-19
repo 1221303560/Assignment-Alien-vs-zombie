@@ -2,7 +2,7 @@
 
 
 Alien vs Zombies is a turn based 2D game where you kill all of the zombies that spawned due to an infection caused by the evil scientist from planet Uranus. 
-By killing all of the with health, pods and arrows that is left on the board we can continue to live happily ever after. 
+By killing all of the zombies with health, pods and arrows that is left on the board we can continue to live happily ever after. 
 
 [alt text] (https://cdn.discordapp.com/attachments/886095499554349079/1070350905490288640/image.png)
 
@@ -11,7 +11,7 @@ Please provide the YouTube link to your [Video Demo](https://youtu.be/VO3LrOuHFT
 ## Compilation Instructions
 
 ```
-g++ main.cpp -o main
+g++ main.cpp -o alienvszombie
 ```
 
 ## User Manual
@@ -25,6 +25,9 @@ Commands
 3. left    - Move left.
 4. right   - Move right.
 5. help    - Display this user commands.
+6. save    - Save the game.
+7. load    - Load a game.
+8. quit    - Quit the game.
 
 ## Progress Log
 
